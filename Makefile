@@ -142,10 +142,10 @@ tests: testapp.bin
 
 .PHONY: universal
 universal:
-	$(MAKE) TARGET=applesilicon
+	$(MAKE) qcc TARGET=applesilicon
 	$(RENAME) fteqcc.bin fteqcc.arm64
 	$(MAKE) clean
-	$(MAKE) TARGET=intelmac
+	$(MAKE) qcc TARGET=intelmac
 	$(RENAME) fteqcc.bin fteqcc.x64
 	$(MAKE) clean
 	$(CREATE_UNIVERSAL) -output fteqcc fteqcc.x64 fteqcc.arm64
