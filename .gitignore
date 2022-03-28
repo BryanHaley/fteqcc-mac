@@ -54,3 +54,9 @@ dkms.conf
 # macOS
 .DS_Store
 ._*
+
+# Build
+fteqcc.bin
+fteqcc.x64
+fteqcc.arm64
+fteqcc

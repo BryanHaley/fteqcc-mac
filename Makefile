@@ -6,8 +6,15 @@ WIN32GUI_OBJS=qccgui.o qccguistuff.o packager.o
 TUI_OBJS=qcctui.o
 LIB_OBJS=
 
-CC?=gcc
-CFLAGS?=-Wall
+CC     := gcc
+CFLAGS := -Wall
+
+MAKE   := make
+RENAME := mv
+
+COPY_FILE := cp
+
+CREATE_UNIVERSAL := lipo -create
 
 all: help qcc
 help:
@@ -22,6 +29,21 @@ WARNING_CFLAGS=-Wno-pointer-sign
 BASE_CFLAGS+=$(WARNING_CFLAGS)
 BASE_CFLAGS+=$(USEGUI_CFLAGS)
 
+TARGET :=
+PLATFORM_CFLAGS :=
+PLATFORM_LFLAGS :=
+
+BREW_PREFIX := $(shell brew --prefix)
+INSTALL_LOCATION := $(BREW_PREFIX)/bin/
+
+ifeq ($(TARGET),applesilicon)
+	PLATFORM_CFLAGS += -target arm64-apple-macos11
+	PLATFORM_LFLAGS += -target arm64-apple-macos11
+else ifeq ($(TARGET),intelmac)
+	PLATFORM_CFLAGS += -target x86_64-apple-macos10.9
+	PLATFORM_LFLAGS += -target x86_64-apple-macos10.9
+endif
+
 ifneq ($(DEBUG),)
 	BASE_CFLAGS+=-ggdb
 else
@@ -30,7 +52,7 @@ endif
 BASE_LDFLAGS+=-lz
 # set to "" for debugging
 
-DO_CC?=$(CC) $(BASE_CFLAGS) -o $@ -c $< $(CFLAGS)
+DO_CC?=$(CC) $(BASE_CFLAGS) $(PLATFORM_CFLAGS) -o $@ -c $< $(CFLAGS)
 
 lib: 
 
@@ -49,7 +71,7 @@ win:
 	$(MAKE) USEGUI_CFLAGS="-DUSEGUI -DQCCONLY" R_win
 
 R_qcc: $(QCC_OBJS) $(COMMON_OBJS) $(TUI_OBJS)
-	$(CC) $(BASE_CFLAGS) -o fteqcc.bin -O3 $(QCC_OBJS) $(TUI_OBJS) $(COMMON_OBJS) $(BASE_LDFLAGS) -lm
+	$(CC) $(BASE_CFLAGS) $(PLATFORM_LFLAGS) -o fteqcc.bin -O3 $(QCC_OBJS) $(TUI_OBJS) $(COMMON_OBJS) $(BASE_LDFLAGS) -lm
 qcc:
 	$(MAKE) USEGUI_CFLAGS="" R_qcc
 
@@ -92,7 +114,13 @@ gtkgui:
 	$(MAKE) USEGUI_CFLAGS="-DUSEGUI -DQCCONLY" R_gtkgui
 
 clean:
-	$(RM) fteqcc.bin fteqcc.exe $(QCC_OBJS) $(COMMON_OBJS) $(VM_OBJS) $(GTKGUI_OBJS) $(WIN32GUI_OBJS) $(TUI_OBJS)
+	-$(RM) $(QCC_OBJS) $(COMMON_OBJS) $(VM_OBJS) $(GTKGUI_OBJS) $(WIN32GUI_OBJS) $(TUI_OBJS)
+
+clean_bins:
+	-$(RM) fteqcc.bin
+	-$(RM) fteqcc.exe
+	-$(RM) fteqcc.arm64
+	-$(RM) fteqcc.x64
 
 qcvm.so: $(QCC_OBJS) $(VM_OBJS) $(COMMON_OBJS)
 	$(CC) $(BASE_CFLAGS) -o $@ -O3 $(BASE_LDFLAGS) $(QCC_OBJS) $(VM_OBJS) $(COMMON_OBJS) -shared
@@ -111,3 +139,17 @@ tests: testapp.bin
 	@echo Tests run.
 
 .PHONY: tests
+
+.PHONY: universal
+universal:
+	$(MAKE) TARGET=applesilicon
+	$(RENAME) fteqcc.bin fteqcc.arm64
+	$(MAKE) clean
+	$(MAKE) TARGET=intelmac
+	$(RENAME) fteqcc.bin fteqcc.x64
+	$(MAKE) clean
+	$(CREATE_UNIVERSAL) -output fteqcc fteqcc.x64 fteqcc.arm64
+
+.PHONY: install
+install:
+	$(COPY_FILE) fteqcc $(INSTALL_LOCATION)
