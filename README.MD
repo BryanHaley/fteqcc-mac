@@ -1,6 +1,6 @@
 # fteqcc for macOS
 
-This project builds fteqcc for macOS (both Intel macOS 10.9+ and Apple Silicon macOS 11.0+).
+This project builds fteqcc for macOS (both Intel macOS 10.9+ and Apple Silicon macOS 11.0+). Forked from the source tarball available at [fteqcc.org](https://www.fteqcc.org/) circa revision 6202.
 
 ## Building
 
